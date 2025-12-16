@@ -1,22 +1,22 @@
 package in.bawvpl.Authify.filter;
 
 import in.bawvpl.Authify.util.JwtUtil;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import org.springframework.security.core.userdetails.UserDetailsService;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -26,90 +26,98 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
 
+    private static final Set<String> PUBLIC_PATHS = Set.of(
+            "/api/v1.0/register",
+            "/api/v1.0/login",
+            "/api/v1.0/login/verify-otp",
+            "/api/v1.0/send-otp",
+            "/api/v1.0/send-reset-otp",
+            "/api/v1.0/reset-password"
+    );
+
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        String method = request.getMethod();
-        if ("OPTIONS".equalsIgnoreCase(method)) {
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+
+        // Allow preflight
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
 
-        String servletPath = request.getServletPath() == null ? "" : request.getServletPath();
-        String requestUri = request.getRequestURI() == null ? "" : request.getRequestURI();
+        String path = request.getRequestURI();
 
-        // Skip register/login paths (cover both with/without context-path and trailing slash)
-        if (matchesPublic(servletPath) || matchesPublic(requestUri)) {
-            return true;
+        // Public endpoints
+        for (String publicPath : PUBLIC_PATHS) {
+            if (path.equals(publicPath) || path.startsWith(publicPath + "/")) {
+                return true;
+            }
         }
 
-        return false;
-    }
-
-    private boolean matchesPublic(String path) {
-        if (path == null || path.isBlank()) return false;
-        if (path.equals("/api/v1.0/register") || path.equals("/register")) return true;
-        if (path.equals("/api/v1.0/register/") || path.equals("/register/")) return true;
-        if (path.equals("/api/v1.0/login") || path.equals("/login")) return true;
-        if (path.equals("/api/v1.0/login/") || path.equals("/login/")) return true;
-        if (path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui")) return true;
-        return false;
+        // Swagger
+        return path.startsWith("/v3/api-docs")
+                || path.startsWith("/swagger-ui");
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain)
             throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
-        String jwt = null;
-        String username = null;
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            jwt = authHeader.substring(7);
-            try {
-                username = jwtUtil.extractUsername(jwt);
-            } catch (Exception ex) {
-                log.warn("Failed to extract username from JWT: {}", ex.getMessage());
-                respondUnauthorized(response, "Invalid token: " + ex.getMessage());
-                return;
-            }
-        } else {
-            log.debug("No Bearer Authorization header for {} {}", request.getMethod(), request.getRequestURI());
+        // No token → let Spring Security handle it
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
         }
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            try {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        String jwt = authHeader.substring(7);
+        String username;
 
-                // Important: validate token by comparing token data with userDetails/username
-                // jwtUtil.validateToken(jwt, username) should check subject and expiry
-                boolean valid = jwtUtil.validateToken(jwt, username);
-                if (valid) {
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                    log.debug("JWT validated and authentication set for user '{}'", username);
-                } else {
-                    log.warn("Invalid JWT token for user '{}'", username);
-                    respondUnauthorized(response, "Invalid or expired token");
-                    return;
-                }
-            } catch (Exception ex) {
-                log.warn("Failed to validate JWT or load user details: {}", ex.getMessage());
-                respondUnauthorized(response, "Invalid token or user not found");
+        try {
+            username = jwtUtil.extractUsername(jwt);
+        } catch (Exception e) {
+            unauthorized(response, "Invalid token");
+            return;
+        }
+
+        if (username != null &&
+                SecurityContextHolder.getContext().getAuthentication() == null) {
+
+            UserDetails userDetails =
+                    userDetailsService.loadUserByUsername(username);
+
+            if (!jwtUtil.validateToken(jwt, userDetails.getUsername())) {
+                unauthorized(response, "Token expired or invalid");
                 return;
             }
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+
+            authentication.setDetails(
+                    new WebAuthenticationDetailsSource().buildDetails(request)
+            );
+
+            SecurityContextHolder.getContext()
+                    .setAuthentication(authentication);
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private void respondUnauthorized(HttpServletResponse response, String message) throws IOException {
+    private void unauthorized(HttpServletResponse response, String message)
+            throws IOException {
+
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
-        // escape message minimal
-        String safe = message == null ? "" : message.replace("\"", "\\\"");
-        response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"" + safe + "\"}");
+        response.getWriter().write(
+                "{ \"error\": \"Unauthorized\", \"message\": \"" + message + "\" }"
+        );
     }
 }

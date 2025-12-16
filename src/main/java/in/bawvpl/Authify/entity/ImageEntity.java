@@ -14,12 +14,15 @@ public class ImageEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
     // original file name
+    @Column(name = "filename")
     private String filename;
 
     // content type e.g. image/png
+    @Column(name = "contentType")
     private String contentType;
 
     // use LONGBLOB for MySQL to be safe with large images

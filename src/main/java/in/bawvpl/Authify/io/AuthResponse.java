@@ -1,16 +1,11 @@
 package in.bawvpl.Authify.io;
 
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-/**
- * Simple DTO returned after login.
- */
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Builder
 public class AuthResponse {
-    private String email;
-    private String token;
+    private String accessToken;
+    private ProfileResponse profile;
 }

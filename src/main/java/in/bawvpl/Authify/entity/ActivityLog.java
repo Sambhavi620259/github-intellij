@@ -15,6 +15,7 @@ public class ActivityLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
     // user identifier (UUID or email)
@@ -24,6 +25,7 @@ public class ActivityLog {
     @Column(nullable = false)
     private String action; // e.g. "LOGIN", "PAYMENT_CREATED"
 
+    @Column(name = "details")
     private String details;
 
     @Column(nullable = false)

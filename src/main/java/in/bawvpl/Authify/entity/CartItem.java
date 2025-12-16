@@ -23,7 +23,12 @@ public class CartItem {
     @Column(nullable = false)
     private String productId;
 
+    @Column(name = "productName")
     private String productName;
+
+    @Column(name = "price")
     private double price;
+
+    @Column(name = "quantity")
     private int quantity;
 }
