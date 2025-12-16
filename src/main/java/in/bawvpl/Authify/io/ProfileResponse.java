@@ -1,4 +1,4 @@
-package in.bawvpl.Authify.io; // use same package you expect; update imports accordingly
+package in.bawvpl.Authify.io;
 
 import lombok.Builder;
 import lombok.Data;
@@ -9,5 +9,7 @@ public class ProfileResponse {
     private String userId;
     private String name;
     private String email;
+    private String phoneNumber;
     private Boolean isAccountVerified;
+    private Boolean isKycVerified;
 }

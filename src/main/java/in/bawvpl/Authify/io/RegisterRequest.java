@@ -28,11 +28,11 @@ public class RegisterRequest {
     @Size(min = 6, message = "Password must be at least 6 characters long")
     private String password;
 
-    // ✅ Added phone number
+    // ✔ Correct field name to match UserEntity.phoneNumber
     @NotBlank(message = "Phone number is required")
     @Pattern(
             regexp = "^[0-9]{10}$",
             message = "Phone must be a valid 10-digit number"
     )
-    private String phone;
+    private String phoneNumber;
 }
