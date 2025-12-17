@@ -24,22 +24,7 @@
 		<java.version>17</java.version>
 		<jjwt.version>0.11.5</jjwt.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.release>${java.version}</maven.compiler.release>
 	</properties>
-
-	<!-- Optional: extra repositories (Maven Central + Spring release) -->
-	<repositories>
-		<repository>
-			<id>spring-releases</id>
-			<name>Spring Releases</name>
-			<url>https://repo.spring.io/release</url>
-		</repository>
-		<repository>
-			<id>central</id>
-			<name>Maven Central</name>
-			<url>https://repo1.maven.org/maven2/</url>
-		</repository>
-	</repositories>
 
 	<dependencies>
 
@@ -61,23 +46,23 @@
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
 
-		<!-- Mail (JavaMailSender) -->
+		<!-- Mail -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
 
-		<!-- Validation (recommended starter instead of only API) -->
+		<!-- Validation -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 
-		<!-- MySQL runtime driver -->
+		<!-- ✅ MariaDB JDBC Driver (REQUIRED) -->
 		<dependency>
-			<groupId>com.mysql</groupId>
-			<artifactId>mysql-connector-j</artifactId>
-			<scope>runtime</scope>
+			<groupId>org.mariadb.jdbc</groupId>
+			<artifactId>mariadb-java-client</artifactId>
+			<version>3.3.3</version>
 		</dependency>
 
 		<!-- Lombok -->
@@ -87,7 +72,7 @@
 			<scope>provided</scope>
 		</dependency>
 
-		<!-- JWT (JJWT) -->
+		<!-- JWT -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
@@ -106,51 +91,33 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- Devtools (optional for dev only) -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-devtools</artifactId>
-			<optional>true</optional>
-		</dependency>
-
 		<!-- Testing -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
-			<exclusions>
-				<!-- exclude junit vintage if present -->
-				<exclusion>
-					<groupId>org.junit.vintage</groupId>
-					<artifactId>junit-vintage-engine</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 
 	</dependencies>
 
 	<build>
 		<plugins>
-			<!-- Compiler plugin (set Java release level) -->
+
+			<!-- Compiler -->
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.11.0</version>
 				<configuration>
-					<release>${maven.compiler.release}</release>
-					<encoding>${project.build.sourceEncoding}</encoding>
+					<release>17</release>
+					<encoding>UTF-8</encoding>
 					<compilerArgs>
 						<arg>-parameters</arg>
 					</compilerArgs>
 				</configuration>
 			</plugin>
 
-			<!-- Lombok annotation processor for IDE/compile -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-			</plugin>
-
-			<!-- Spring Boot plugin -->
+			<!-- Spring Boot -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -158,6 +125,8 @@
 					<mainClass>in.bawvpl.Authify.AuthifyApplication</mainClass>
 				</configuration>
 			</plugin>
+
 		</plugins>
 	</build>
+
 </project>
