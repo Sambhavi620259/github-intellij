@@ -25,11 +25,15 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
 
-    // All endpoints that NEVER require authentication
     private static final String[] PUBLIC_PATHS = {
             "/",
+            "/error",
+
+            // Auth
             "/api/v1.0/register",
+            "/api/v1.0/register/",
             "/api/v1.0/login",
+            "/api/v1.0/login/",
             "/api/v1.0/login/verify-otp",
             "/api/v1.0/verify-otp",
             "/api/v1.0/send-otp",
@@ -40,9 +44,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             "/swagger-ui",
             "/swagger-ui/",
             "/swagger-ui/index.html",
-            "/swagger-ui.html",
+            "/swagger-ui/**",
             "/v3/api-docs",
-            "/v3/api-docs/"
+            "/v3/api-docs/**"
     };
 
     @Override
@@ -50,25 +54,22 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // Allow all OPTIONS requests (important for CORS & browsers)
+        // Allow all OPTIONS requests (preflight)
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
 
-        // Log to help troubleshoot
-        log.info("JWT Filter checking path: {}", path);
+        log.info("Checking JWT filter path: {}", path);
 
-        // Allow all public paths (with or without trailing slash)
+        // Allow all public paths
         for (String publicPath : PUBLIC_PATHS) {
-            if (path.equals(publicPath) ||
-                    path.startsWith(publicPath + "/") ||
-                    path.startsWith(publicPath)) {
-                log.info("PUBLIC endpoint allowed without JWT → {}", publicPath);
+            if (path.equals(publicPath) || path.startsWith(publicPath)) {
+                log.info("PUBLIC endpoint allowed: {}", publicPath);
                 return true;
             }
         }
 
-        // Otherwise JWT is required
+        // Otherwise token needed
         return false;
     }
 
@@ -81,7 +82,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // No Authorization header → continue normally (Spring Security will block protected routes)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
