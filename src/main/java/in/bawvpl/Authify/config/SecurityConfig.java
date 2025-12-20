@@ -21,29 +21,27 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // ✅ NEW WAY (no deprecation warning)
                 .csrf(csrf -> csrf.disable())
 
-                // ✅ Stateless (JWT)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // ✅ Authorization rules
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/v1.0/register",
                                 "/api/v1.0/login",
                                 "/api/v1.0/login/verify-otp",
+                                "/api/v1.0/verify-otp",
                                 "/api/v1.0/send-otp",
                                 "/api/v1.0/send-reset-otp",
                                 "/api/v1.0/reset-password",
                                 "/v3/api-docs/**",
-                                "/swagger-ui/**"
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
 
-                // ✅ JWT filter
                 .addFilterBefore(
                         jwtRequestFilter,
                         UsernamePasswordAuthenticationFilter.class

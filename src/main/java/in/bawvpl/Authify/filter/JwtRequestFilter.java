@@ -30,6 +30,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             "/api/v1.0/register",
             "/api/v1.0/login",
             "/api/v1.0/login/verify-otp",
+            "/api/v1.0/verify-otp",
             "/api/v1.0/send-otp",
             "/api/v1.0/send-reset-otp",
             "/api/v1.0/reset-password"
@@ -38,23 +39,29 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
 
-        // Allow preflight
-        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+        String method = request.getMethod();
+        String path = request.getRequestURI();
+
+        // Allow OPTIONS
+        if ("OPTIONS".equalsIgnoreCase(method)) {
             return true;
         }
 
-        String path = request.getRequestURI();
-
-        // Public endpoints
+        // Public routes
         for (String publicPath : PUBLIC_PATHS) {
-            if (path.equals(publicPath) || path.startsWith(publicPath + "/")) {
+            if (path.equals(publicPath) || path.startsWith(publicPath)) {
                 return true;
             }
         }
 
         // Swagger
-        return path.startsWith("/v3/api-docs")
-                || path.startsWith("/swagger-ui");
+        if (path.startsWith("/v3/api-docs") ||
+                path.startsWith("/swagger-ui") ||
+                path.equals("/swagger-ui.html")) {
+            return true;
+        }
+
+        return false;
     }
 
     @Override
@@ -66,7 +73,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // No token → let Spring Security handle it
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -93,19 +99,18 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 return;
             }
 
-            UsernamePasswordAuthenticationToken authentication =
+            UsernamePasswordAuthenticationToken authToken =
                     new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,
                             userDetails.getAuthorities()
                     );
 
-            authentication.setDetails(
+            authToken.setDetails(
                     new WebAuthenticationDetailsSource().buildDetails(request)
             );
 
-            SecurityContextHolder.getContext()
-                    .setAuthentication(authentication);
+            SecurityContextHolder.getContext().setAuthentication(authToken);
         }
 
         filterChain.doFilter(request, response);
