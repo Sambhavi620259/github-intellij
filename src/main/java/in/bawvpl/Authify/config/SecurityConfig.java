@@ -27,25 +27,24 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
+                        // PUBLIC ENDPOINTS
                         .requestMatchers(
-                                "/api/v1.0/register",
-                                "/api/v1.0/login",
-                                "/api/v1.0/login/verify-otp",
-                                "/api/v1.0/verify-otp",
-                                "/api/v1.0/send-otp",
-                                "/api/v1.0/send-reset-otp",
-                                "/api/v1.0/reset-password",
-                                "/v3/api-docs/**",
+                                "/api/v1.0/register", "/api/v1.0/register/**",
+                                "/api/v1.0/login", "/api/v1.0/login/**",
+                                "/api/v1.0/verify-otp", "/api/v1.0/verify-otp/**",
+                                "/api/v1.0/send-otp", "/api/v1.0/send-otp/**",
+                                "/api/v1.0/send-reset-otp", "/api/v1.0/send-reset-otp/**",
+                                "/api/v1.0/reset-password", "/api/v1.0/reset-password/**",
                                 "/swagger-ui/**",
-                                "/swagger-ui.html"
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**"
                         ).permitAll()
+
+                        // ANY OTHER ENDPOINT → JWT AUTH REQUIRED
                         .anyRequest().authenticated()
                 )
 
-                .addFilterBefore(
-                        jwtRequestFilter,
-                        UsernamePasswordAuthenticationFilter.class
-                );
+                .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

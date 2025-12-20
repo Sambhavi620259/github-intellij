@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -26,39 +25,34 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
 
-    private static final Set<String> PUBLIC_PATHS = Set.of(
+    private static final String[] PUBLIC_PATHS = {
             "/api/v1.0/register",
             "/api/v1.0/login",
-            "/api/v1.0/login/verify-otp",
             "/api/v1.0/verify-otp",
+            "/api/v1.0/login/verify-otp",
             "/api/v1.0/send-otp",
             "/api/v1.0/send-reset-otp",
-            "/api/v1.0/reset-password"
-    );
+            "/api/v1.0/reset-password",
+            "/swagger-ui",
+            "/swagger-ui.html",
+            "/v3/api-docs"
+    };
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
 
-        String method = request.getMethod();
         String path = request.getRequestURI();
 
-        // Allow OPTIONS
-        if ("OPTIONS".equalsIgnoreCase(method)) {
+        // Always allow OPTIONS → important for browser & CORS
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
 
-        // Public routes
+        // Allow all public endpoints including trailing slashes
         for (String publicPath : PUBLIC_PATHS) {
-            if (path.equals(publicPath) || path.startsWith(publicPath)) {
+            if (path.equals(publicPath) || path.startsWith(publicPath + "/") || path.startsWith(publicPath)) {
                 return true;
             }
-        }
-
-        // Swagger
-        if (path.startsWith("/v3/api-docs") ||
-                path.startsWith("/swagger-ui") ||
-                path.equals("/swagger-ui.html")) {
-            return true;
         }
 
         return false;
@@ -73,6 +67,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
+        // No token → let Spring handle (will stop on protected routes)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
