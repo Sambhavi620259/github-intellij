@@ -25,17 +25,24 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
 
+    // All endpoints that NEVER require authentication
     private static final String[] PUBLIC_PATHS = {
+            "/",
             "/api/v1.0/register",
             "/api/v1.0/login",
-            "/api/v1.0/verify-otp",
             "/api/v1.0/login/verify-otp",
+            "/api/v1.0/verify-otp",
             "/api/v1.0/send-otp",
             "/api/v1.0/send-reset-otp",
             "/api/v1.0/reset-password",
+
+            // Swagger
             "/swagger-ui",
+            "/swagger-ui/",
+            "/swagger-ui/index.html",
             "/swagger-ui.html",
-            "/v3/api-docs"
+            "/v3/api-docs",
+            "/v3/api-docs/"
     };
 
     @Override
@@ -43,18 +50,25 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // Always allow OPTIONS → important for browser & CORS
+        // Allow all OPTIONS requests (important for CORS & browsers)
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
 
-        // Allow all public endpoints including trailing slashes
+        // Log to help troubleshoot
+        log.info("JWT Filter checking path: {}", path);
+
+        // Allow all public paths (with or without trailing slash)
         for (String publicPath : PUBLIC_PATHS) {
-            if (path.equals(publicPath) || path.startsWith(publicPath + "/") || path.startsWith(publicPath)) {
+            if (path.equals(publicPath) ||
+                    path.startsWith(publicPath + "/") ||
+                    path.startsWith(publicPath)) {
+                log.info("PUBLIC endpoint allowed without JWT → {}", publicPath);
                 return true;
             }
         }
 
+        // Otherwise JWT is required
         return false;
     }
 
@@ -67,7 +81,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // No token → let Spring handle (will stop on protected routes)
+        // No Authorization header → continue normally (Spring Security will block protected routes)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -86,8 +100,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         if (username != null &&
                 SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            UserDetails userDetails =
-                    userDetailsService.loadUserByUsername(username);
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
             if (!jwtUtil.validateToken(jwt, userDetails.getUsername())) {
                 unauthorized(response, "Token expired or invalid");
