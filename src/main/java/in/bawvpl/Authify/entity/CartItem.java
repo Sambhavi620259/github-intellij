@@ -1,10 +1,9 @@
 package in.bawvpl.Authify.entity;
 
-import lombok.*;
 import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
-@Table(name = "cart_items")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,19 +15,15 @@ public class CartItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // User UUID
-    @Column(nullable = false)
-    private String userId;
-
-    @Column(nullable = false)
+    private String userId;        // <-- Matches your backend logic
     private String productId;
-
-    @Column(name = "productName")
     private String productName;
 
-    @Column(name = "price")
     private double price;
-
-    @Column(name = "quantity")
     private int quantity;
+
+    // IMPORTANT FIX
+    @ManyToOne
+    @JoinColumn(name = "cart_id")
+    private Cart cart;
 }

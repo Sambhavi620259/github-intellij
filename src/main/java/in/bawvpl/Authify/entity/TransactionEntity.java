@@ -16,30 +16,17 @@ public class TransactionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
     private Long id;
 
-    /**
-     * User identifier (UUID or DB id depending on your app)
-     */
-    @Column(name = "user_id", nullable = false)
     private String userId;
 
-    /**
-     * Status string: "SUCCESS", "FAILED", etc.
-     */
-    @Column(name = "status")
-    private String status;
+    // CREDIT or DEBIT
+    @Column(nullable = false)
+    private String type;
 
-    /**
-     * Amount for the transaction
-     */
-    @Column(name = "amount")
+    @Column(nullable = false)
     private Double amount;
 
-    /**
-     * Timestamp when the transaction occurred (UTC Instant)
-     */
-    @Column(name = "timestamp")
-    private Instant timestamp;
+    @Column(nullable = false)
+    private Instant createdAt;
 }

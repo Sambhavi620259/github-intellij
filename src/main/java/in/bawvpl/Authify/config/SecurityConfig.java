@@ -26,57 +26,37 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // Enable CORS + Disable CSRF
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
 
-                // Stateless Session for JWT
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(sm ->
+                        sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // Public & Protected routes
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/", "/error",
-
-                                // Favicon allowed to fix your 403
-                                "/favicon.ico",
-
-                                // API Root
-                                "/api/v1.0",
-                                "/api/v1.0/",
-
-                                // Auth Endpoints
                                 "/api/v1.0/register",
                                 "/api/v1.0/login",
                                 "/api/v1.0/login/verify-otp",
-                                "/api/v1.0/verify-otp",
                                 "/api/v1.0/send-otp",
                                 "/api/v1.0/send-reset-otp",
                                 "/api/v1.0/reset-password",
-
-                                // Swagger
                                 "/swagger-ui/**",
-                                "/swagger-ui.html",
                                 "/v3/api-docs/**"
                         ).permitAll()
-
-                        // Everything else requires token
                         .anyRequest().authenticated()
                 )
 
-                // JWT Filter
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // CORS Configuration (Required for React)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("*")); // allow all, can restrict later
+        config.setAllowedOrigins(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(false);

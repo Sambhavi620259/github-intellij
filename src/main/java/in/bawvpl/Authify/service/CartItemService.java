@@ -5,15 +5,11 @@ import in.bawvpl.Authify.io.CartItemResponse;
 
 import java.util.List;
 
-public interface CartService {
+public interface CartItemService {
 
-    List<CartItemResponse> getCart(String userId);
+    CartItemResponse addItem(String userId, CartItemRequest req);
 
-    CartItemResponse addItem(String userId, CartItemRequest request);
+    List<CartItemResponse> getItemsForUser(String userId);
 
-    CartItemResponse updateItem(String userId, Long itemId, int quantity);
-
-    void removeItem(String userId, Long itemId);
-
-    void clearCart(String userId);
+    void removeItem(String userId, String productId);
 }

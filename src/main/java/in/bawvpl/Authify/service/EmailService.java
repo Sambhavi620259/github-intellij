@@ -15,33 +15,47 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.from:no-reply@yourdomain.local}")
+    @Value("${spring.mail.from:no-reply@authify.com}")
     private String from;
 
-    public void sendVerificationOtpEmail(String to, String otp) {
-        sendOtpEmail(to, "Your Authify verification code", otp);
-    }
-
-    public void sendResetOtpEmail(String to, String otp) {
-        sendOtpEmail(to, "Authify password reset code", otp);
-    }
-
+    // ------------------ SEND GENERAL OTP EMAIL ------------------
     private void sendOtpEmail(String to, String subject, String otp) {
-        log.info("Preparing OTP email to {}", to);
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, "utf-8");
-            String html = "<p>Your Authify code is: <b>" + otp + "</b></p>"
-                    + "<p>If you did not request this, ignore this email.</p>";
-            helper.setText(html, true);
+            MimeMessage msg = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(msg, "utf-8");
+
+            String html = """
+                    <div>
+                        <h2>Your Authify OTP</h2>
+                        <p>Your one-time password is:</p>
+                        <h1>%s</h1>
+                        <p>This OTP is valid for 5–15 minutes depending on action.</p>
+                        <br>
+                        <p>If you did NOT request this, please ignore.</p>
+                    </div>
+                    """.formatted(otp);
+
             helper.setTo(to);
-            helper.setSubject(subject);
             helper.setFrom(from);
-            mailSender.send(message);
-            log.info("Sent OTP email to {}", to);
-        } catch (Exception ex) {
-            log.error("Failed to send OTP email to {}: {}", to, ex.getMessage());
-            throw new RuntimeException("Unable to send OTP email", ex);
+            helper.setSubject(subject);
+            helper.setText(html, true);
+
+            mailSender.send(msg);
+            log.info("OTP email sent to {}", to);
+
+        } catch (Exception e) {
+            log.error("Failed to send OTP email to {}: {}", to, e.getMessage());
+            throw new RuntimeException("Unable to send OTP email");
         }
+    }
+
+    // ------------------ SEND REGISTRATION / VERIFY OTP ------------------
+    public void sendVerificationOtpEmail(String to, String otp) {
+        sendOtpEmail(to, "Your Authify Verification OTP", otp);
+    }
+
+    // ------------------ SEND RESET PASSWORD OTP ------------------
+    public void sendResetOtpEmail(String to, String otp) {
+        sendOtpEmail(to, "Authify Password Reset OTP", otp);
     }
 }
